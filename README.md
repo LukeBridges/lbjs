@@ -1,0 +1,4 @@
+lbjs
+====
+
+lbjs JavaScript Library
