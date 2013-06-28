@@ -1,4 +1,4 @@
 lbjs
 ====
 
-lbjs JavaScript Library
+[Documentation](https://github.com/LukeBridges/lbjs/wiki)
