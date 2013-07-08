@@ -141,6 +141,15 @@
 					{
 						return this[pos];
 					},
+		getAll:		function()
+					{
+						var ret = [];
+						for(var i = 0; i < this.length; i++)
+						{
+							ret.push(this[i]);
+						}
+						return ret;
+					},
 		hide:		function()
 					{	
 						for(var i = 0; i < this.length; i++)
