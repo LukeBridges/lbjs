@@ -1,27 +1,22 @@
 (function(){
-	var iversion = "0.11a",
+	var iversion = "0.11b",
 		iname = "lbjs",
 		window = this,
 		isSizzle = typeof Sizzle !== "undefined";
 		
 	window.lbjs = function(selector){
 		var obj = new lbjsObject(), type = typeof selector;
-		if(type == "object")
-		{
-			obj[0] = selector;
-			obj.length = 1;
-		}else if(type == "string"){
-			var isHtml = selector.indexOf("<") > -1;
-			if(!isHtml && isSizzle){
+		if((type == "string") && isSizzle){
+			if(!(selector.indexOf("<") > -1)){
 				Sizzle(selector,document,obj);
-			}else if(isHtml && isSizzle){
+			}else{
 				var temp = document.createElement("div");
 				temp.innerHTML = selector;
 				Sizzle("*",temp,obj);
-			}else{
-				obj[0] = document.createElement("div");
-				obj.length = 1;
 			}
+		}else if(type == "object"){
+				obj[0] = selector;
+				obj.length = 1;
 		}else if(lbjs.array.isArray(selector)){
 			obj = new lbjsObject(selector);
 		}else{
@@ -36,7 +31,7 @@
 	lbjsObject = function(selector){	
 		if(selector)
 		{
-			for(var i = 0; i < selector.length; i++)
+			for(var i = 0, len = selector.length; i < len; i++)
 			{
 				this[i] = selector[i];
 			}
@@ -46,18 +41,17 @@
 	lbjsObject.prototype = [];
 	lbjsObject.prototype.length = 0;
 	lbjsObject.prototype.fn = {
+		appendCache:"",
+		prependCache:"",
 		push:		Array.prototype.push,
 		jq:			function()
 					{
 						if(($ !== undefined)||(jQuery !== undefined))
 						{
 							return $(this);
-						}else{
-							return this;
 						}
+						return this;
 					},
-		appendCache:"",
-		prependCache:"",
 		append:		function(toAppend)
 					{
 						if(typeof toAppend == "string")
@@ -230,7 +224,7 @@
 		ready:		function(func)
 					{
 						var oldonload = window.onload;
-						if(lbjs.xtra.isFunction(window.onload))
+						if(typeof window.onload !== "function")
 						{
 							window.onload = func;
 						}else{
