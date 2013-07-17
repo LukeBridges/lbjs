@@ -144,6 +144,14 @@
 						}
 						return ret;
 					},
+		height:		function(newHeight)
+					{
+						for(var i = 0; i < this.length; i++)
+						{
+							this[i].style.height = "" + newHeight + "px";
+						}
+						return this;
+					},
 		hide:		function()
 					{	
 						for(var i = 0; i < this.length; i++)
