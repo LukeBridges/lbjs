@@ -2,17 +2,28 @@
 	var iversion = "0.12a",
 		iname = "lbjs",
 		window = this,
-		isSizzle = typeof Sizzle !== "undefined";
+		isSizzle = typeof Sizzle !== "undefined",
+		isQuery = typeof document.querySelectorAll !== "undefined";
 		
 	window.lbjs = function(selector){
 		var obj = new lbjsObject(), type = typeof selector;
-		if(isSizzle && (type == "string")){
+		if((isSizzle || isQuery) && (type == "string")){
 			if(!(selector.indexOf("<") > -1)){
-				Sizzle(selector,document,obj);
+				if(isSizzle)
+				{
+					Sizzle(selector,document,obj);
+				}else{
+					obj = new lbjsObject(document.querySelectorAll(selector));
+				}
 			}else{
 				var temp = document.createElement("div");
 				temp.innerHTML = selector;
-				Sizzle("*",temp,obj);
+				if(isSizzle)
+				{
+					Sizzle("*",temp,obj);
+				}else{
+					obj = new lbjsObject(temp.querySelectorAll("*"));
+				}
 			}
 		}else if(selector.length || lbjs.array.isArray(selector)){
 			obj = new lbjsObject(selector);
@@ -125,16 +136,26 @@
 					},
 		find:		function(subselector)
 					{
+						var ret = [];
 						if(isSizzle)
 						{
-							var ret = [];
+							
 							for(var i = 0; i < this.length; i++)
 							{
 								Sizzle(subselector, this[i], ret);
 							}
-							return new lbjsObject(ret);
+						}else if(isQuery){
+							for(var i = 0; i < this.length; i++)
+							{
+								var topush = this[i].querySelectorAll(subselector);
+								for(var j = 0; j < topush.length; j++)
+								{
+									ret.push(topush[j]);
+								}
+							}
 						}
-						return this;
+						if(ret == []) return this;
+						return new lbjsObject(ret);;
 					},
 		first:		function()
 					{
