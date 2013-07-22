@@ -9,20 +9,20 @@
 		var obj = new lbjsObject(), type = typeof selector;
 		if((isSizzle || isQuery) && (type == "string")){
 			if(!(selector.indexOf("<") > -1)){
-				if(isSizzle)
+				if(isQuery)
 				{
-					Sizzle(selector,document,obj);
-				}else{
 					obj = new lbjsObject(document.querySelectorAll(selector));
+				}else{
+					Sizzle(selector,document,obj);
 				}
 			}else{
 				var temp = document.createElement("div");
 				temp.innerHTML = selector;
-				if(isSizzle)
+				if(isQuery)
 				{
-					Sizzle("*",temp,obj);
-				}else{
 					obj = new lbjsObject(temp.querySelectorAll("*"));
+				}else{
+					Sizzle("*",temp,obj);
 				}
 			}
 		}else if(selector.length || lbjs.array.isArray(selector)){
@@ -137,14 +137,8 @@
 		find:		function(subselector)
 					{
 						var ret = [];
-						if(isSizzle)
+						if(isQuery)
 						{
-							
-							for(var i = 0; i < this.length; i++)
-							{
-								Sizzle(subselector, this[i], ret);
-							}
-						}else if(isQuery){
 							for(var i = 0; i < this.length; i++)
 							{
 								var topush = this[i].querySelectorAll(subselector);
@@ -152,6 +146,12 @@
 								{
 									ret.push(topush[j]);
 								}
+							}
+						}else if(isSizzle){
+							
+							for(var i = 0; i < this.length; i++)
+							{
+								Sizzle(subselector, this[i], ret);
 							}
 						}
 						if(ret == []) return this;
