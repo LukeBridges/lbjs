@@ -1,12 +1,12 @@
 (function(){
-	var iversion = "0.11b",
+	var iversion = "0.12a",
 		iname = "lbjs",
 		window = this,
 		isSizzle = typeof Sizzle !== "undefined";
 		
 	window.lbjs = function(selector){
 		var obj = new lbjsObject(), type = typeof selector;
-		if((type == "string") && isSizzle){
+		if(isSizzle && (type == "string")){
 			if(!(selector.indexOf("<") > -1)){
 				Sizzle(selector,document,obj);
 			}else{
@@ -14,19 +14,19 @@
 				temp.innerHTML = selector;
 				Sizzle("*",temp,obj);
 			}
+		}else if(selector.length || lbjs.array.isArray(selector)){
+			obj = new lbjsObject(selector);
 		}else if(type == "object"){
 				obj[0] = selector;
 				obj.length = 1;
-		}else if(lbjs.array.isArray(selector)){
-			obj = new lbjsObject(selector);
 		}else{
 			obj[0] = document.createElement("div");
 			obj.length = 1;
 		}
 		return obj;
 	};
-	L = lbjs = window.lbjs;
-	_L = _lbjs = window.lbjs;
+	
+	L = lbjs = _L = _lbjs = window.lbjs;
 	
 	lbjsObject = function(selector){	
 		if(selector)
@@ -54,9 +54,12 @@
 					},
 		append:		function(toAppend)
 					{
-						if(typeof toAppend == "string")
+						var type = typeof toAppend;
+						if(type == "string")
 						{
 							this[0].innerHTML += toAppend;
+						}else if(type == "function"){
+							this[0].innerHTML += toAppend();
 						}else{
 							this[0].appendChild(toAppend);
 						}
@@ -64,7 +67,13 @@
 					},
 		appendBuild:function(toAppend)
 					{
-						this.appendCache += toAppend;
+						var type = typeof toAppend;
+						if(type == "string")
+						{
+							this.appendCache += toAppend;
+						}else if(type == "function"){
+							this.appendCache += toAppend();
+						}
 						return this;
 					},
 		appendAdd:	function()
@@ -194,6 +203,7 @@
 						}else{
 							return this[0].innerHTML;
 						}
+						return this;
 					},
 		last:		function()
 					{
@@ -207,12 +217,15 @@
 						}
 						return this;
 					},
-		noop:		function(){},
+		noop:		function(){return this;},
 		prepend:	function(toPrepend)
 					{
-						if(typeof toPrepend == "string")
+						var type = typeof toPrepend;
+						if(type == "string")
 						{
 							this[0].innerHTML = toPrepend + this[0].innerHTML;
+						}else if(type == "function"){
+							this[0].innerHTML = toPrepend() + this[0].innerHTML;
 						}else{
 							this[0].insertBefore(toPrepend, this[this.length - 1].firstChild);
 						}
@@ -220,7 +233,13 @@
 					},
 		prependBuild:function(toPrepend)
 					{
-						this.prependCache += toPrepend;
+						var type = typeof toPrepend;
+						if(type == "string")
+						{
+							this.prependCache += toPrepend;
+						}else if(type == "function"){
+							this.prependCache += toPrepend();
+						}
 						return this;
 					},
 		prependAdd:	function()
@@ -348,8 +367,15 @@
 					{
 						$ = jQuery = lbjs;
 						$.fn = lbjsObject.prototype;
-						lbjsObject.prototype.each = lbjsObject.prototype.loop;
-						lbjsObject.prototype.text = lbjsObject.prototype.html;
+						lbjsObject.prototype.each = 	lbjsObject.prototype.loop;
+						lbjsObject.prototype.text = 	lbjsObject.prototype.html;
+						lbjsObject.prototype.filter = 	function(){return this;};
+						lbjsObject.prototype.extend = 	function(newFunctions)
+														{
+															for(var propt in newFunctions){
+																eval("lbjsObject.prototype." + propt + " = " + newFunctions[propt]);
+															}
+														};
 					}
 	};
 }());
