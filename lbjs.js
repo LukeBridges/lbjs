@@ -1,10 +1,11 @@
 (function(){
-	var iversion = "0.12b",
+	var iversion = "0.14a",
 		iname = "lbjs",
 		window = this,
 		isSizzle = typeof Sizzle !== "undefined",
-		isQuery = typeof document.querySelectorAll !== "undefined";
-		
+		isQuery = typeof document.querySelectorAll !== "undefined",
+		con = typeof console !== 'undefined' ? console : {log: function(){}};
+	
 	window.lbjs = function(selector){
 		var obj = new lbjsObject(), type = typeof selector;
 		if((type == "string") && (isSizzle || isQuery)){
@@ -45,8 +46,7 @@
 			obj[0] = selector;
 			obj.length = 1;
 		}else{
-			obj[0] = document.createElement("div");
-			obj.length = 1;
+			obj.length = 0;
 		}
 		return obj;
 	};
@@ -127,12 +127,9 @@
 					},
 		debug:		function()
 					{
-						if(console)
+						for(var i = 0; i < this.length; i++)
 						{
-							for(var i = 0; i < this.length; i++)
-							{
-								console.log(this[i]);
-							}
+							con.log(this[i]);
 						}
 						return this;
 					},
@@ -193,7 +190,7 @@
 					{
 						for(var i = 0; i < this.length; i++)
 						{
-							this[i].style.height = "" + newHeight + "px";
+							this[i].style.height = newHeight + "px";
 						}
 						return this;
 					},
