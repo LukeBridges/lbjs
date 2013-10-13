@@ -1,54 +1,50 @@
 (function(){
-	var iversion = "0.18a",
+	var iversion = "0.17a",
 		iname = "lbjs",
 		window = this,
 		isSizzle = typeof Sizzle !== 'undefined',
 		isQuery = typeof document.querySelectorAll !== 'undefined',
-		con = typeof console !== 'undefined' ? console : {log: function(){return;}};
+		con = typeof console !== 'undefined' ? console : {log: function(){return null;}};
 	
 	window.lbjs = function(selector){
-		var obj = new lbjsObject(), type = typeof selector, i = 0, result, len;
-		if((isSizzle || isQuery) && (type == "string")){
-			if((selector.indexOf(".") == 0) && (selector.indexOf(" ") == -1)){
-				obj[0] = document.getElementsByClassName(selector.substr(1, selector.length));
-				obj.length = 1;
-			}else if((selector.indexOf("#") == 0) && (selector.indexOf(" ") == -1)){
-				obj[0] = document.getElementById(selector.substr(1, selector.length));
-				obj.length = 1;
-			}else if(selector.indexOf("<") == 0){
-				var temp = document.createElement("div");
-				temp.innerHTML = selector;
-				var tempChildren = temp.children;
-				for(i = 0, len = tempChildren.length; i < len; i++)
-				{
-					obj[i] = tempChildren[i];
-				}
-				obj.length = tempChildren.length;
-			}else{
+		var obj = new lbjsObject(), type = typeof selector, i = 0, result;
+		if((type == "string") && (isSizzle || isQuery)){
+			if(!(selector.indexOf("<") > -1)){
 				if(isSizzle)
 				{
 					Sizzle(selector,document,obj);
 				}else{
 					result = document.querySelectorAll(selector);
-					for(i = 0, len = result.length; i < len; i++)
+					for(i = 0; i < result.length; i++)
+					{
+						obj[i] = result[i];
+					}
+					obj.length = result.length;
+				}
+			}else{
+				var temp = document.createElement("div");
+				temp.innerHTML = selector;
+				if(isSizzle)
+				{
+					Sizzle("*",temp,obj);
+				}else{
+					result = temp.querySelectorAll("*");
+					for(i = 0; i < result.length; i++)
 					{
 						obj[i] = result[i];
 					}
 					obj.length = result.length;
 				}
 			}
-		}else if(type == "object"){
-			if(selector.length || lbjs.array.isArray(selector))
+		}else if((type == "object" && selector.length) || lbjs.array.isArray(selector)){
+			for(i = 0; i < selector.length; i++)
 			{
-				for(i = 0, len = selector.length; i < len; i++)
-				{
-					obj[i] = selector[i];
-				}
-				obj.length = selector.length;
-			}else{
-				obj[0] = selector;
-				obj.length = 1;
+				obj[i] = selector[i];
 			}
+			obj.length = selector.length;
+		}else if(type == "object"){
+			obj[0] = selector;
+			obj.length = 1;
 		}else{
 			obj.length = 0;
 		}
@@ -68,16 +64,19 @@
 			this.length = selector.length;
 		}
 	};
+	lbjsObject.prototype = [];
 	lbjsObject.prototype.length = 0;
 	lbjsObject.fn = {
-		_appendCache:"",
-		_prependCache:"",
+		appendCache:"",
+		prependCache:"",
 		push:		Array.prototype.push,
 		splice:		Array.prototype.splice,
 		jq:			function()
 					{
-						if(jQuery)
+						if($)
 						{
+							return $(this);
+						}else if(jQuery){
 							return jQuery(this);
 						}
 						return this;
@@ -88,10 +87,7 @@
 						{
 							for(var i = 0; i < this.length; i++)
 							{
-								if(this[i].className.indexOf(toAdd) < 0)
-								{
-									this[i].className += toAdd;
-								}
+								this[i].className += toAdd;
 							}
 						}
 						return this;
@@ -119,17 +115,17 @@
 							var type = typeof toAppend;
 							if(type == "string")
 							{
-								this._appendCache += toAppend;
+								this.appendCache += toAppend;
 							}else if(type == "function"){
-								this._appendCache += toAppend();
+								this.appendCache += toAppend();
 							}
 						}
 						return this;
 					},
 		appendAdd:	function()
 					{
-						this[0].insertAdjacentHTML("beforeend", this._appendCache);
-						this._appendCache = "";
+						this[0].insertAdjacentHTML("beforeend", this.appendCache);
+						this.appendCache = "";
 						return this;
 					},
 		at:			function(pos)
@@ -186,7 +182,8 @@
 						{
 							var ret = [], i = 0;
 							if(isSizzle)
-							{	
+							{
+								
 								for(i = 0; i < this.length; i++)
 								{
 									Sizzle(subselector, this[i], ret);
@@ -268,11 +265,11 @@
 					{
 						if(hoverFunc === undefined)
 						{
-							hoverFunc = function(){return;};
+							hoverFunc = function(){};
 						}
 						if(outFunc === undefined)
 						{
-							outFunc = function(){return;};
+							outFunc = function(){};
 						}
 						for(var i = 0; i < this.length; i++)
 						{
@@ -347,17 +344,17 @@
 							var type = typeof toPrepend;
 							if(type == "string")
 							{
-								this._prependCache += toPrepend;
+								this.prependCache += toPrepend;
 							}else if(type == "function"){
-								this._prependCache += toPrepend();
+								this.prependCache += toPrepend();
 							}
 						}
 						return this;
 					},
 		prependAdd:	function()
 					{
-						this[0].insertAdjacentHTML("afterbegin", this._prependCache);
-						this._prependCache = "";
+						this[0].insertAdjacentHTML("afterbegin", this.prependCache);
+						this.prependCache = "";
 						return this;
 					},
 		ready:		function(func)
@@ -385,11 +382,8 @@
 							for(var i = 0; i < this.length; i++)
 							{
 								var classes = this[i].getAttribute('class');
-								if(classes.indexOf(toDel) > -1)
-								{
-									classes = classes.replace(toDel,'').replace('  ','');
-									this[i].setAttribute('class', classes);
-								}
+								classes = classes.replace(toDel,'').replace('  ','');
+								this[i].setAttribute('class', classes);
 							}
 						}
 						return this;
@@ -435,24 +429,11 @@
 							}
 						}
 						return this;
-					},
-		width:		function(newWidth)
-					{
-						if(newWidth)
-						{
-							for(var i = 0; i < this.length; i++)
-							{
-								this[i].style.width = newWidth + "px";
-							}
-							return this;
-						}else{
-							return this[0].style.width;
-						}
-					},
+					}
 	};
 	lbjsObject.prototype = lbjsObject.fn;
-	lbjsObject.fn.eq = lbjsObject.fn.at;
-	lbjsObject.fn.each = lbjsObject.fn.loop;
+	lbjsObject.prototype.eq = lbjsObject.prototype.at;
+	lbjsObject.prototype.each = lbjsObject.prototype.loop;
 	
 	lbjs.about = {
 		tag:		function(){return iname + "/" + iversion;},
@@ -535,15 +516,15 @@
 		noop:		function(){},
 		isType:		function(varin, typein){return typeof varin == typein;},
 		isFunction:	function(varin){return typeof varin == "function";},
-		isUndefined:function(varin){return varin === undefined;},
+		isUndefined:function(varin){return varin === undefined;}
 	};
 	
 	lbjs.jq = {
 		reg:		function()
 					{
-						$ = jQuery = jquery = lbjs = L;
+						$ = jQuery = lbjs = L;
 						$.fn = lbjsObject.fn;
-						lbjsObject.fn.extend = 	function(newFunctions)
+						lbjsObject.prototype.extend = 	function(newFunctions)
 														{
 															for(var propt in newFunctions){
 																eval("lbjsObject.fn." + propt + " = " + newFunctions[propt]);
