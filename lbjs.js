@@ -10,8 +10,12 @@
 		var obj = new lbjsObject(), type = typeof selector, i = 0, result, len;
 		if((isSizzle || isQuery) && (type == "string")){
 			if((selector.indexOf(".") == 0) && (selector.indexOf(" ") == -1)){
-				obj[0] = document.getElementsByClassName(selector.substr(1, selector.length));
-				obj.length = 1;
+				result = document.getElementsByClassName(selector.substr(1, selector.length));
+				for(i = 0, len = result.length; i < len; i++)
+				{
+					obj[i] = result[i];
+				}
+				obj.length = result.length;
 			}else if((selector.indexOf("#") == 0) && (selector.indexOf(" ") == -1)){
 				obj[0] = document.getElementById(selector.substr(1, selector.length));
 				obj.length = 1;
