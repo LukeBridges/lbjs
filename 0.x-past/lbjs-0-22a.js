@@ -1,5 +1,5 @@
 (function(){
-	var iversion = "0.22b",
+	var iversion = "0.22a",
 		iname = "lbjs",
 		window = this,
 		isSizzle = typeof Sizzle !== 'undefined',
@@ -7,9 +7,9 @@
 		con = typeof console !== 'undefined' ? console : {log: function(){return;}, time: function(){return;}, timeEnd: function(){return;}};
 	
 	window.lbjs = function(selector){
-		var obj = new lbjsObject(), type = typeof selector, i = 0, result, len, tagList = ["div","body","table","tr","td","html","head","a"],
+		var obj = new lbjsObject(), type = typeof selector, i = 0, result, len, tagList = ["div","body","tabel","tr","td","html","head"],
 			isTag = function(tag){
-				for(var t = 0, leng = tagList.length; t < leng; t += 1)
+				for(var t = 0, len = tagList.length; t < len; t++)
 				{
 					if(tagList[t] === tag) return true;
 				}
