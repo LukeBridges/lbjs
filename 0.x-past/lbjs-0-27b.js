@@ -1,35 +1,60 @@
 (function(){
-	var iversion = "0.28d",
+	var iversion = "0.27b",
 		iname = "lbjs",
 		window = this,
-		isSizzle = typeof Sizzle !== 'undefined',
-		tagList = ["div","body","table","tr","td","html","head","a","span","ul","li","ol","p","h1","h2","h3","h4","h5","form"];
+		isSizzle = typeof Sizzle !== 'undefined';
 	
-	window.L = window.l = window.lbjs = function(selector){
-		var obj = new LObject(), temp, nospace;
-		if(selector && (typeof selector === "string") && (isSizzle || document.querySelectorAll))
-		{
+	L = l = lbjs = window.lbjs = function(selector){
+		var obj = new LObject(false), type = typeof selector, i = 0, result, len, temp, tempChildren, nospace,
+			tagList = ["div","body","table","tr","td","html","head","a","span","ul","li","ol","p","h1","h2","h3","h4","h5","form"];
+		if((type === "string") && (isSizzle || document.querySelectorAll)){
 			nospace = (selector.indexOf(" ") === -1);
 			if(nospace && (selector[0] === "#")){
-				obj[0] = document.getElementById(selector.slice(1));
+				obj[0] = document.getElementById(selector.substr(1, selector.length));
 			}else if(nospace && (selector[0] === ".") && document.getElementsByClassName){
-				lbjs.array.copy(obj, document.getElementsByClassName(selector.slice(1)));
+				result = document.getElementsByClassName(selector.substr(1, selector.length));
+				for(len = result.length; i < len; i += 1)
+				{
+					obj[i] = result[i];
+				}
+				obj.length = result.length;
 			}else if(nospace && (tagList.indexOf(selector) > -1) && document.getElementsByTagName){
-				lbjs.array.copy(obj, document.getElementsByTagName(selector));
+				result = document.getElementsByTagName(selector);
+				for(len = result.length; i < len; i += 1)
+				{
+					obj[i] = result[i];
+				}
+				obj.length = result.length;
 			}else if((selector[0] === "<") && document.createElement){
 				temp = document.createElement("div");
 				temp.innerHTML = selector;
-				lbjs.array.copy(obj, temp.children);
+				tempChildren = temp.children;
+				for(len = tempChildren.length; i < len; i += 1)
+				{
+					obj[i] = tempChildren[i];
+				}
+				obj.length = tempChildren.length;
 			}else{
-				if(isSizzle){
+				if(isSizzle)
+				{
 					Sizzle(selector,document,obj);
 				}else{
-					lbjs.array.copy(obj, document.querySelectorAll(selector));
+					result = document.querySelectorAll(selector);
+					for(len = result.length; i < len; i += 1)
+					{
+						obj[i] = result[i];
+					}
+					obj.length = result.length;
 				}
 			}
-		}else if(selector && (typeof selector === "object")){
-			if(selector.length || (selector.constructor === Array)){
-				lbjs.array.copy(obj, selector);
+		}else if(type === "object"){
+			if(selector.length || (selector.constructor === Array))
+			{
+				for(len = selector.length; i < len; i += 1)
+				{
+					obj[i] = selector[i];
+				}
+				obj.length = selector.length;
 			}else{
 				obj[0] = selector;
 			}
@@ -42,7 +67,14 @@
 	LObject = function(selector){	
 		var i, len;
 		this.length = 1;
-		if(selector){lbjs.array.copy(this, selector);}
+		if(selector)
+		{
+			for(i = 0, len = selector.length; i < len; i += 1)
+			{
+				this[i] = selector[i];
+			}
+			this.length = selector.length;
+		}
 	};
 	
 	LObject.prototype = {
@@ -241,8 +273,11 @@
 					},	
 		getAll:		function()
 					{
-						var ret = [];
-						lbjs.array.copy(ret, this);
+						var ret = [], i, len;
+						for(i = 0, len = this.length; i < len; i += 1)
+						{
+							ret.push(this[i]);
+						}
 						return ret;
 					},
 		height:		function(newHeight)
@@ -531,15 +566,7 @@
 						}
 						return -1;
 					},
-		isArray:	function(varIn){return varIn.constructor === Array;},
-		copy:		function(obj, result){
-						var len, i = 0;
-						for(len = result.length; i < len; i += 1)
-						{
-							obj[i] = result[i];
-						}
-						obj.length = result.length;
-					}
+		isArray:	function(varIn){return varIn.constructor === Array;}
 	};
 
 	lbjs.text = {
@@ -576,22 +603,19 @@
 							scr = document.createElement('script');
 						if(get !== false)
 						{
-							if(!window.lbjs[name.split('.')[1]] || get === true)
-							{
-								scr.type = 'text/javascript';
-								scr.src = 'http://static.lukebridges.co.uk/lbjs/ext/' + name + '.js';
-								scr.async = false;
-								scr.onreadystatechange = scr.onload = function(){
-									var state = scr.readyState;
-									if(!vercheck.done && (!state || (state === "loaded" || state === "complete")))
-									{
-										vercheck.done = true;
-										return vercheck();
-									}
-									return null;
-								};
-								document.getElementsByTagName('head')[0].appendChild(scr);
-							}
+							scr.type = 'text/javascript';
+							scr.src = 'http://static.lukebridges.co.uk/lbjs/ext/' + name + '.js';
+							scr.async = false;
+							scr.onreadystatechange = scr.onload = function(){
+								var state = scr.readyState;
+								if(!vercheck.done && (!state || (state === "loaded" || state === "complete")))
+								{
+									vercheck.done = true;
+									return vercheck();
+								}
+								return null;
+							};
+							document.getElementsByTagName('head')[0].appendChild(scr);
 							return true;
 						}
 						return vercheck();

@@ -1,35 +1,71 @@
 (function(){
-	var iversion = "0.28d",
+	var iversion = "0.24e",
 		iname = "lbjs",
 		window = this,
 		isSizzle = typeof Sizzle !== 'undefined',
-		tagList = ["div","body","table","tr","td","html","head","a","span","ul","li","ol","p","h1","h2","h3","h4","h5","form"];
+		isQuery = document.querySelectorAll !== undefined,
+		con = ((typeof console !== 'undefined') ? console : {log: function(){return;}, time: function(){return;}, timeEnd: function(){return;}});
 	
-	window.L = window.l = window.lbjs = function(selector){
-		var obj = new LObject(), temp, nospace;
-		if(selector && (typeof selector === "string") && (isSizzle || document.querySelectorAll))
-		{
-			nospace = (selector.indexOf(" ") === -1);
-			if(nospace && (selector[0] === "#")){
-				obj[0] = document.getElementById(selector.slice(1));
-			}else if(nospace && (selector[0] === ".") && document.getElementsByClassName){
-				lbjs.array.copy(obj, document.getElementsByClassName(selector.slice(1)));
-			}else if(nospace && (tagList.indexOf(selector) > -1) && document.getElementsByTagName){
-				lbjs.array.copy(obj, document.getElementsByTagName(selector));
+	if(typeof lbjsDefer === 'function'){lbjsDefer();}
+	
+	window.lbjs = function(selector){
+		var obj = new LObject(), type = typeof selector, i = 0, result, len, t, temp, tempChildren, 
+			tagList = ["div","body","table","tr","td","html","head","a","span","ul","li","ol"],
+			isTag = function(tag){
+				for(t = 0, len = tagList.length; t < len; t += 1)
+				{
+					if(tagList[t] === tag){return true;}
+				}
+				return false;
+			};
+		if((type === "string") && (isSizzle || isQuery)){
+			var noSpace = (selector.indexOf(" ") === -1);
+			if((selector[0] === "#") && noSpace){
+				obj[0] = document.getElementById(selector.substr(1, selector.length));
+			}else if((selector.charAt(0) === ".") && noSpace && document.getElementsByClassName){
+				result = document.getElementsByClassName(selector.substr(1, selector.length));
+				for(len = result.length; i < len; i += 1)
+				{
+					obj[i] = result[i];
+				}
+				obj.length = result.length;
+			}else if(isTag(selector) && noSpace && document.getElementsByTagName){
+				result = document.getElementsByTagName(selector);
+				for(len = result.length; i < len; i += 1)
+				{
+					obj[i] = result[i];
+				}
+				obj.length = result.length;
 			}else if((selector[0] === "<") && document.createElement){
 				temp = document.createElement("div");
 				temp.innerHTML = selector;
-				lbjs.array.copy(obj, temp.children);
+				tempChildren = temp.children;
+				for(len = tempChildren.length; i < len; i += 1)
+				{
+					obj[i] = tempChildren[i];
+				}
+				obj.length = tempChildren.length;
 			}else{
-				if(isSizzle){
+				if(isSizzle)
+				{
 					Sizzle(selector,document,obj);
 				}else{
-					lbjs.array.copy(obj, document.querySelectorAll(selector));
+					result = document.querySelectorAll(selector);
+					for(len = result.length; i < len; i += 1)
+					{
+						obj[i] = result[i];
+					}
+					obj.length = result.length;
 				}
 			}
-		}else if(selector && (typeof selector === "object")){
-			if(selector.length || (selector.constructor === Array)){
-				lbjs.array.copy(obj, selector);
+		}else if(type === "object"){
+			if(selector.length || (selector.constructor === Array))
+			{
+				for(len = selector.length; i < len; i += 1)
+				{
+					obj[i] = selector[i];
+				}
+				obj.length = selector.length;
 			}else{
 				obj[0] = selector;
 			}
@@ -39,13 +75,22 @@
 		return obj;
 	};
 	
+	L = l = lbjs = window.lbjs;
+	
 	LObject = function(selector){	
 		var i, len;
 		this.length = 1;
-		if(selector){lbjs.array.copy(this, selector);}
+		if(selector)
+		{
+			for(i = 0, len = selector.length; i < len; i += 1)
+			{
+				this[i] = selector[i];
+			}
+			this.length = selector.length;
+		}
 	};
-	
-	LObject.prototype = {
+	LObject.prototype.length = 0;
+	LObject.fn = LObject.prototype = {
 		appendCache:"",
 		prependCache:"",
 		push:		Array.prototype.push,
@@ -63,7 +108,6 @@
 		addClass:	function(toAdd)
 					{
 						var i, len;
-						toAdd = encodeURI(toAdd);
 						if(toAdd)
 						{
 							for(i = 0, len = this.length; i < len; i += 1)
@@ -85,38 +129,22 @@
 					{
 						if(toAppend)
 						{
-							var type = typeof toAppend, i, len;
+							var type = typeof toAppend;
 							if(type === "string")
 							{
-								for(i = 0, len = this.length; i < len; i += 1)
+								try
 								{
-									if(this[i].insertAdjacentHTML)
+									this[0].insertAdjacentHTML("beforeend", toAppend);
+								}catch(err){
+									try
 									{
-										this[i].insertAdjacentHTML("beforeend", toAppend);
-									}else if(this[i].innerHTML){
-										this[i].innerHTML += toAppend;
-									}
+										this[0].innerHTML += toAppend;
+									}catch(ignore){}
 								}
 							}else if(type === "function"){
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									if(this[i].insertAdjacentHTML)
-									{
-										this[i].insertAdjacentHTML("beforeend", toAppend.apply(this[i]));
-									}else if(this[i].innerHTML){
-										this[i].innerHTML += toAppend.apply(this[i]);
-									}
-								}
+								this[0].insertAdjacentHTML("beforeend", toAppend());
 							}else{
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									if(toAppend.length)
-									{
-										this[i].appendChild(toAppend[0]);
-									}else{
-										this[i].appendChild(toAppend);
-									}
-								}
+								this[0].appendChild(toAppend);
 							}
 						}
 						return this;
@@ -125,29 +153,19 @@
 					{
 						if(toAppend)
 						{
-							var type = typeof toAppend, i, len;
+							var type = typeof toAppend;
 							if(type === "string")
 							{
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this.appendCache += toAppend;
-								}
+								this.appendCache += toAppend;
 							}else if(type === "function"){
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this.appendCache += toAppend.apply(this[i]);
-								}
+								this.appendCache += toAppend();
 							}
 						}
 						return this;
 					},
 		appendAdd:	function()
 					{
-						var i, len;
-						for(i = 0, len = this.length; i < len; i += 1)
-						{
-							this[i].insertAdjacentHTML("beforeend", this.appendCache);
-						}
+						this[0].insertAdjacentHTML("beforeend", this.appendCache);
 						this.appendCache = "";
 						return this;
 					},
@@ -169,6 +187,15 @@
 									this.event("click", func);
 								}
 							}
+						}
+						return this;
+					},
+		debug:		function()
+					{
+						var i, len;
+						for(i = 0, len = this.length; i < len; i += 1)
+						{
+							con.log(this[i]);
 						}
 						return this;
 					},
@@ -201,7 +228,7 @@
 								{
 									Sizzle(subselector, this[i], ret);
 								}
-							}else if(document.querySelectorAll){
+							}else if(isQuery){
 								for(i = 0, len = this.length; i < len; i += 1)
 								{
 									topush = this[i].querySelectorAll(subselector);
@@ -241,8 +268,11 @@
 					},	
 		getAll:		function()
 					{
-						var ret = [];
-						lbjs.array.copy(ret, this);
+						var ret = [], i, len;
+						for(i = 0, len = this.length; i < len; i += 1)
+						{
+							ret.push(this[i]);
+						}
 						return ret;
 					},
 		height:		function(newHeight)
@@ -346,33 +376,14 @@
 					{
 						if(toPrepend)
 						{
-							var type = typeof toPrepend, i, len;
+							var type = typeof toPrepend;
 							if(type === "string")
 							{
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									if(this[i].insertAdjacentHTML)
-									{
-										this[i].insertAdjacentHTML("afterbegin", toPrepend);
-									}else{
-										this[i].innerHTML = toPrepend + this[i].innerHTML;
-									}
-								}
+								this[0].insertAdjacentHTML("afterbegin", toPrepend);
 							}else if(type === "function"){
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									if(this[i].insertAdjacentHTML)
-									{
-										this[i].insertAdjacentHTML("afterbegin", toPrepend.apply(this[i]));
-									}else{
-										this[i].innerHTML = toPrepend.apply(this[i]) + this[i].innerHTML;
-									}
-								}
+								this[0].insertAdjacentHTML("afterbegin", toPrepend());
 							}else{
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this[i].insertBefore(toPrepend, this[this.length - 1].firstChild);
-								}
+								this[0].insertBefore(toPrepend, this[this.length - 1].firstChild);
 							}
 						}
 						return this;
@@ -381,29 +392,19 @@
 					{
 						if(toPrepend)
 						{
-							var type = typeof toPrepend, i, len;
+							var type = typeof toPrepend;
 							if(type === "string")
 							{
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this[i].prependCache += toPrepend;
-								}
+								this.prependCache += toPrepend;
 							}else if(type === "function"){
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this[i].prependCache += toPrepend.apply(this[i]);
-								}
+								this.prependCache += toPrepend();
 							}
 						}
 						return this;
 					},
 		prependAdd:	function()
 					{
-						var i, len;
-						for(i = 0, len = this.length; i < len; i += 1)
-						{
-							this[i].insertAdjacentHTML("afterbegin", this.prependCache);
-						}
+						this[0].insertAdjacentHTML("afterbegin", this.prependCache);
 						this.prependCache = "";
 						return this;
 					},
@@ -512,8 +513,8 @@
 						return this[0].style.width;
 					}
 	};
-	LObject.prototype.eq = LObject.prototype.at;
-	LObject.prototype.each = LObject.prototype.loop;
+	LObject.fn.eq = LObject.fn.at;
+	LObject.fn.each = LObject.fn.loop;
 	
 	lbjs.about = {
 		tag:		function(){return iname + "/" + iversion;},
@@ -531,17 +532,23 @@
 						}
 						return -1;
 					},
-		isArray:	function(varIn){return varIn.constructor === Array;},
-		copy:		function(obj, result){
-						var len, i = 0;
-						for(len = result.length; i < len; i += 1)
+		isArray:	function(varIn){return varIn.constructor === Array;}
+	};
+	
+	lbjs.file = {
+		read:		function(filepath)
+					{
+						if(XMLHttpRequest)
 						{
-							obj[i] = result[i];
+							var xmlhttp = new XMLHttpRequest();
+							xmlhttp.open("GET",filepath,false);
+							xmlhttp.send(null);
+							return xmlhttp.responseText;
 						}
-						obj.length = result.length;
+						return "";
 					}
 	};
-
+	
 	lbjs.text = {
 		getRanChar:	function(possible){return possible.charAt(Math.floor(Math.random() * possible.length));},
 		splitLines:	function(line){return line.split("\n");}
@@ -557,64 +564,27 @@
 		reg:		function()
 					{
 						$ = jQuery = jquery = lbjs = L;
-						$.fn = LObject.prototype;
-						$.fn.extend = lbjs.ext.extend;
-						L.isFunction = 	lbjs.xtra.isFunction;
-						L.support = {opacity: document.createElement("div").style.opacity};
+						$.fn = LObject.fn;
+						LObject.fn.extend = 	function(newFunctions)
+														{
+															var propt;
+															for(propt in newFunctions){
+																if(newFunctions.hasOwnProperty(propt)){
+																	LObject.fn[propt] = newFunctions[propt];
+																}
+															}
+														};
 					}
 	};
 	
 	lbjs.ext = {
-		include: 	function(name, ver, get)
+		require: 	function(name, ver)
 					{
-						var vercheck = function(){
-								var plugin = window.lbjs[name.split('.')[1]];
-								if(plugin.pversion < ver){throw "";}
-								try{plugin.main();}catch(ignore){}
-								return true;
-							},
-							scr = document.createElement('script');
-						if(get !== false)
-						{
-							if(!window.lbjs[name.split('.')[1]] || get === true)
-							{
-								scr.type = 'text/javascript';
-								scr.src = 'http://static.lukebridges.co.uk/lbjs/ext/' + name + '.js';
-								scr.async = false;
-								scr.onreadystatechange = scr.onload = function(){
-									var state = scr.readyState;
-									if(!vercheck.done && (!state || (state === "loaded" || state === "complete")))
-									{
-										vercheck.done = true;
-										return vercheck();
-									}
-									return null;
-								};
-								document.getElementsByTagName('head')[0].appendChild(scr);
-							}
-							return true;
-						}
-						return vercheck();
-					},
-		includeList:function(deps, get)
-					{	
-						var i = 0, len = deps.length;
-						for(i; i < len; i += 1)
-						{	
-							lbjs.ext.require(deps[i][0], deps[i][1], get);
-						}
-					},
-		require:	function(name, ver, get){lbjs.ext.include(name, ver, get);},
-		requireList:function(deps, get){lbjs.ext.includeList(deps, get);},
-		extend: 	function(newFunctions)
-					{
-						var propt;
-						for(propt in newFunctions){
-							if(newFunctions.hasOwnProperty(propt)){
-								LObject.prototype[propt] = newFunctions[propt];
-							}
-						}
-						return this;
+						ver = parseFloat(ver);
+						var extVer = parseFloat(eval(name + ".pversion"));
+						if(extVer < ver){throw "";}
+						eval(name + ".main()");
+						return true;
 					}
 	};
 }());
