@@ -1,31 +1,27 @@
 (function(){
-	var iversion = "0.32a",
+	var iversion = "0.30a",
 		iname = "lbjs",
 		window = this,
-		_cache = {	docGetElId : 	document.getElementById,
-					docCreateEl : 	document.createElement,
-					aPush : 		Array.prototype.push,
-					getNewLObject : function(pass){return new LObject(pass);},
-					tags : 			{div:true, body:true, table:true, tr:true, td:true, html:true,
-									head:true, a:true, span:true, ul:true, li:true, ol:true, 
-									p:true, h1:true, h2:true, h3:true, h4:true, h5:true, form:true, 
-									input:true, select:true, textarea:true, b:true, i:true, u:true,
-									dl:true, dt:true, dd:true, blockquote:true, tt:true, em:true,
-									strong:true}};
+		tagList = ["div","body","table","tr","td","html","head","a","span","ul","li","ol","p","h1","h2","h3","h4","h5","form","input","select","textarea"],
+		getNewLObject = function(){return new LObject();},
+		doc = document,
+		docGetElId = doc.getElementById,
+		docCreateEl = doc.createElement;
 	
 	window.Grab = function(selector, scope, copyTo){
 		var ret = [], temp, 
 			nospace = selector.indexOf(" ") < 0, 
 			nocss = selector.indexOf("[") < 0;
-		scope = scope || document;
-		if(nocss && nospace && scope.getElementById && (selector[0] === "#")){
-			ret.push(_cache.docGetElId.call(scope, selector.slice(1)));
-		}else if(nocss && nospace && scope.getElementsByClassName && (selector[0] === ".")){
+		if(!scope){scope = document;}
+		if(nocss && nospace && (selector[0] === "#") && scope.getElementById){
+			ret[0] = docGetElId.call(scope, selector.slice(1));
+			ret.length = 1;
+		}else if(nocss && nospace && (selector[0] === ".") && scope.getElementsByClassName){
 			ret = scope.getElementsByClassName(selector.slice(1));
-		}else if(nocss && nospace && scope.getElementsByTagName && _cache.tags[selector]){
+		}else if(nocss && nospace && (tagList.indexOf(selector) > -1) && scope.getElementsByTagName){
 			ret = scope.getElementsByTagName(selector);
-		}else if(nocss && _cache.docCreateEl && (selector[0] === "<")){
-			temp = _cache.docCreateEl.call(document, "div");
+		}else if(nocss && (selector[0] === "<") && docCreateEl){
+			temp = docCreateEl.call(doc, "div");
 			temp.innerHTML = selector;
 			ret = temp.children;
 		}else if(scope.querySelectorAll){
@@ -35,36 +31,34 @@
 		return ret;
 	};
 
-	window.l = window.lbjs = function(selector, scope){
-		var obj = new LObject();
+	window.L = window.l = window.lbjs = function(selector){
+		var obj = getNewLObject();
 		if(selector)
 		{
 			if(typeof selector === "string")
 			{
-				scope = scope || document;
-				window.Grab(selector, scope, obj);
-			}else if(selector.length){
-				lbjs.array.copy(obj, selector);
-			}else{
-				obj[0] = selector;
-				obj.length = 1;
+				window.Grab(selector, document, obj);
+			}else if(typeof selector === "object"){
+				if(selector.length || (selector.constructor === Array))
+				{
+					lbjs.array.copy(obj, selector);
+				}else{
+					obj[0] = selector;
+					obj.length = 1;
+				}
 			}
 		}
 		return obj;
 	};
 	
-	window.L = function(selector, scope){
-		return ["Using L is now deprecated, please use lbjs() or l() instead"];
-	};
-	
-	window.LObject = function(domArray){
+	LObject = function(domArray){	
+		this.length = 0;
 		if(domArray){lbjs.array.copy(this, domArray);}
 	};
 	
 	LObject.prototype = {
 		appendCache:"",
 		prependCache:"",
-		length:		0,
 		push:		Array.prototype.push,
 		splice:		Array.prototype.splice,
 		jq:			function()
@@ -74,15 +68,6 @@
 						}
 						if($){
 							return $(this);
-						}
-						return this;
-					},
-		add:		function(toAdd)
-					{
-						var toAdd2 = lbjs(toAdd), i, len, startlen = this.length;
-						for(i = 0, len = toAdd2.length; i < len; i += 1)
-						{
-							this[startlen + i] = toAdd2[i];
 						}
 						return this;
 					},
@@ -186,32 +171,7 @@
 					},
 		at:			function(pos)
 					{
-						return (pos ? _cache.getNewLObject([this[pos]]) : this);
-					},
-		attr:		function(attrIn, val)
-					{
-						var i, len;
-						for(i = 0, len = this.length; i < len; i += 1)
-						{
-							if(val)
-							{
-								this[i].setAttribute(attrIn, val);
-							}else{
-								if(typeof attrIn == "object")
-								{
-									for(var key in attrIn)
-									{
-										if(typeof attrIn[key] !== "function")
-										{
-											this[i].setAttribute(key, attrIn[key]);
-										}
-									}
-								}else{
-									return this[i].getAttribute(attrIn);
-								}
-							}
-						}
-						return this;
+						return (pos ? new LObject([this[pos]]) : this);
 					},
 		click:		function(func)
 					{
@@ -226,22 +186,6 @@
 								}else{
 									this.event("click", func);
 								}
-							}
-						}
-						return this;
-					},
-		data:		function(keyIn, val)
-					{
-						if(typeof keyIn == "string"){
-							if(val)
-							{
-								var i, len;
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this[i].setAttribute("data-" + keyIn, val);
-								}
-							}else{
-								return this[0].getAttribute("data-" + keyIn);
 							}
 						}
 						return this;
@@ -265,23 +209,24 @@
 		find:		function(subselector)
 					{						
 						var i, j, ret = [], topush;
+						
 						if(subselector)
 						{
 							for(i = 0; i < this.length; i += 1)
 							{
-								topush = window.Grab(subselector, this[i], false);
+								topush = window.Grab(subselector, this[i]);
 								for(j = 0; j < topush.length; j += 1)
 								{
 									ret.push(topush[j]);
 								}
 							}
-							return ((ret.length === 0) ? this : _cache.getNewLObject(ret));
+							return ((ret.length === 0) ? this : new LObject(ret));
 						}
 						return this;
 					},
 		filter:		function(filter)
 					{
-						if(filter && (_cache.tags[filter]))
+						if(filter && (tagList.indexOf(filter) > -1))
 						{
 							var ret = [], first = this[0], i, len;
 							for(i = 0, len = first.children.length; i < len; i += 1)
@@ -291,13 +236,13 @@
 									ret.push(first.children[i]);
 								}
 							}
-							return _cache.getNewLObject(ret);
+							return new LObject(ret);
 						}
 						return this;
 					},
 		first:		function()
 					{
-						return _cache.getNewLObject([this[0]]);
+						return new LObject([this[0]]);
 					},
 		get:		function(pos)
 					{
@@ -378,7 +323,7 @@
 							{
 								this[0].innerHTML = newHtml;
 							}else{
-								var temp = _cache.docCreateEl.call(doc, "div");
+								var temp = docCreateEl.call(doc, "div");
 								temp.appendChild(newHtml);
 								this[0].innerHTML = temp.innerHTML;
 							}
@@ -389,7 +334,7 @@
 					},
 		last:		function()
 					{
-						return _cache.getNewLObject([this[this.length - 1]]);
+						return new LObject([this[this.length - 1]]);
 					},
 		loop: 		function(todo)
 					{
@@ -398,7 +343,7 @@
 						{
 							for(i = 0, len = this.length; i < len; i += 1)
 							{
-								todo(i, _cache.getNewLObject([this[i]]));
+								todo(i, new LObject([this[i]]));
 							}
 						}
 						return this;
@@ -611,30 +556,21 @@
 	lbjs.array = {
 		inArray:	function(arrayIn, check)
 					{
-						if(arrayIn.includes)
+						var len = arrayIn.length, i;
+						for(i = 0; i < len; i += 1)
 						{
-							return arrayIn.includes(check);
-						}else{
-							var len = arrayIn.length, i;
-							for(i = 0; i < len; i += 1)
-							{
-								if(arrayIn[i] === check){return i;}
-							}
-							return -1;
+							if(arrayIn[i] === check){return i;}
 						}
+						return -1;
 					},
 		isArray:	function(varIn){return varIn.constructor === Array;},
 		copy:		function(outArray, inArray){
-						if(inArray.constructor === Array){
-							_cache.aPush.apply(outArray, inArray);
-						}else{
-							var len, i = 0;
-							for(len = inArray.length; i < len; i += 1)
-							{
-								outArray[i] = inArray[i];
-							}
-							outArray.length = inArray.length;
+						var len, i = 0;
+						for(len = inArray.length; i < len; i += 1)
+						{
+							outArray[i] = inArray[i];
 						}
+						outArray.length = inArray.length;
 					}
 	};
 
@@ -645,28 +581,21 @@
 	
 	lbjs.xtra = {
 		noop:		function(){return undefined;},
-		isUndefined:function(varin){return varin === undefined;},
-		getHead:	function(){return document.getElementsByTagName ? document.getElementsByTagName('head')[0] : document.head;}(),
-		repeat:		function(count, toDo)
-					{
-						while(count > 0)
-						{
-							toDo();
-							--count;
-						}
-					}
+		isUndefined:function(varin){return varin === undefined;}
 	};
 	
 	lbjs.ext = {
+		list:		[],
 		include: 	function(name, ver, get)
 					{
-						var plugin = window.lbjs[name.split('.')[1]],
-							vercheck = function(){
-								plugin.pversion = plugin.pversion || 0;
-								if(plugin.pversion < ver){throw "Insufficient version of " + name;}
+						var vercheck = function(nameIn){
+								var plugin = window.lbjs[nameIn.split('.')[1]];
+								if(plugin.pversion < ver){throw "";}
+								try{plugin.main();}catch(ignore){}
+								lbjs.ext.list.push(nameIn);
 								return true;
 							},
-							scr = _cache.docCreateEl.call(document, 'script');
+							scr = docCreateEl.call(doc, 'script');
 						if(get !== false)
 						{
 							if(!window.lbjs[name.split('.')[1]] || get === true)
@@ -677,29 +606,20 @@
 								if(ver)
 								{
 									scr.onreadystatechange = scr.onload = function(){
-										if(plugin.main){plugin.main();}
 										var state = scr.readyState;
 										if(!vercheck.done && (!state || (state === "loaded" || state === "complete")))
 										{
 											vercheck.done = true;
-											return vercheck();
+											return vercheck(name);
 										}
 										return null;
 									};
-								}else{
-									scr.onreadystatechange = scr.onload = function(){
-										if(plugin.main){plugin.main();}	
-									}
-									return null;
 								}
-								lbjs.xtra.getHead.appendChild(scr);
-							}else{
-								if(plugin.main){plugin.main();}
+								document.getElementsByTagName('head')[0].appendChild(scr);
 							}
 							return true;
 						}
-						if(plugin.main){plugin.main();}
-						if(ver){return vercheck();}
+						if(ver){return vercheck(name);}
 						return false;
 					},
 		includeList:function(deps, get)
@@ -710,6 +630,8 @@
 							lbjs.ext.include(deps[i][0], deps[i][1], get);
 						}
 					},
+		require:	function(name, ver, get){lbjs.ext.include(name, ver, get);},
+		requireList:function(deps, get){lbjs.ext.includeList(deps, get);},
 		extend: 	function(newFunctions)
 					{
 						var propt;

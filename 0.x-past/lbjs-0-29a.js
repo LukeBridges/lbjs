@@ -1,70 +1,53 @@
 (function(){
-	var iversion = "0.32a",
+	var iversion = "0.29a",
 		iname = "lbjs",
 		window = this,
-		_cache = {	docGetElId : 	document.getElementById,
-					docCreateEl : 	document.createElement,
-					aPush : 		Array.prototype.push,
-					getNewLObject : function(pass){return new LObject(pass);},
-					tags : 			{div:true, body:true, table:true, tr:true, td:true, html:true,
-									head:true, a:true, span:true, ul:true, li:true, ol:true, 
-									p:true, h1:true, h2:true, h3:true, h4:true, h5:true, form:true, 
-									input:true, select:true, textarea:true, b:true, i:true, u:true,
-									dl:true, dt:true, dd:true, blockquote:true, tt:true, em:true,
-									strong:true}};
-	
-	window.Grab = function(selector, scope, copyTo){
-		var ret = [], temp, 
-			nospace = selector.indexOf(" ") < 0, 
-			nocss = selector.indexOf("[") < 0;
-		scope = scope || document;
-		if(nocss && nospace && scope.getElementById && (selector[0] === "#")){
-			ret.push(_cache.docGetElId.call(scope, selector.slice(1)));
-		}else if(nocss && nospace && scope.getElementsByClassName && (selector[0] === ".")){
-			ret = scope.getElementsByClassName(selector.slice(1));
-		}else if(nocss && nospace && scope.getElementsByTagName && _cache.tags[selector]){
-			ret = scope.getElementsByTagName(selector);
-		}else if(nocss && _cache.docCreateEl && (selector[0] === "<")){
-			temp = _cache.docCreateEl.call(document, "div");
-			temp.innerHTML = selector;
-			ret = temp.children;
-		}else if(scope.querySelectorAll){
-			ret = scope.querySelectorAll(selector);
-		}
-		if(copyTo){lbjs.array.copy(copyTo, ret);}
-		return ret;
-	};
+		isSizzle = typeof Sizzle !== "undefined",
+		tagList = ["div","body","table","tr","td","html","head","a","span","ul","li","ol","p","h1","h2","h3","h4","h5","form"];
 
-	window.l = window.lbjs = function(selector, scope){
-		var obj = new LObject();
-		if(selector)
+	window.L = window.l = window.lbjs = function(selector){
+		var obj = new LObject(), temp, nospace;
+		if(selector && (typeof selector === "string") && (isSizzle || document.querySelectorAll))
 		{
-			if(typeof selector === "string")
-			{
-				scope = scope || document;
-				window.Grab(selector, scope, obj);
-			}else if(selector.length){
+			nospace = (selector.indexOf(" ") === -1);
+			if(nospace && (selector[0] === "#")){
+				obj[0] = document.getElementById(selector.slice(1));
+			}else if(nospace && (selector[0] === ".") && document.getElementsByClassName){
+				lbjs.array.copy(obj, document.getElementsByClassName(selector.slice(1)));
+			}else if(nospace && (tagList.indexOf(selector) > -1) && document.getElementsByTagName){
+				lbjs.array.copy(obj, document.getElementsByTagName(selector));
+			}else if((selector[0] === "<") && document.createElement){
+				temp = document.createElement("div");
+				temp.innerHTML = selector;
+				lbjs.array.copy(obj, temp.children);
+			}else{
+				if(isSizzle){
+					Sizzle(selector,document,obj);
+				}else{
+					lbjs.array.copy(obj, document.querySelectorAll(selector));
+				}
+			}
+		}else if(selector && (typeof selector === "object")){
+			if(selector.length || (selector.constructor === Array)){
 				lbjs.array.copy(obj, selector);
 			}else{
 				obj[0] = selector;
-				obj.length = 1;
 			}
+		}else{
+			obj.length = 0;
 		}
 		return obj;
 	};
 	
-	window.L = function(selector, scope){
-		return ["Using L is now deprecated, please use lbjs() or l() instead"];
-	};
-	
-	window.LObject = function(domArray){
-		if(domArray){lbjs.array.copy(this, domArray);}
+	LObject = function(selector){	
+		var i, len;
+		this.length = 1;
+		if(selector){lbjs.array.copy(this, selector);}
 	};
 	
 	LObject.prototype = {
 		appendCache:"",
 		prependCache:"",
-		length:		0,
 		push:		Array.prototype.push,
 		splice:		Array.prototype.splice,
 		jq:			function()
@@ -77,15 +60,6 @@
 						}
 						return this;
 					},
-		add:		function(toAdd)
-					{
-						var toAdd2 = lbjs(toAdd), i, len, startlen = this.length;
-						for(i = 0, len = toAdd2.length; i < len; i += 1)
-						{
-							this[startlen + i] = toAdd2[i];
-						}
-						return this;
-					},
 		addClass:	function(toAdd)
 					{
 						var i, len;
@@ -94,20 +68,13 @@
 						{
 							for(i = 0, len = this.length; i < len; i += 1)
 							{
-								if(typeof toAdd === "function")
+								if(this[i].className.indexOf(toAdd) < 0)
 								{
-									toAdd = toAdd.apply(this[i], [i, this[i].className]);
-								}
-								if(typeof toAdd === "string")
-								{
-									if(this[i].className.indexOf(toAdd) < 0)
+									if(this[i].classList)
 									{
-										if(this[i].classList)
-										{
-											this[i].classList.add(toAdd);
-										}else{
-											this[i].className += toAdd;
-										}
+										this[i].classList.add(toAdd);
+									}else{
+										this[i].className += toAdd;
 									}
 								}
 							}
@@ -186,32 +153,7 @@
 					},
 		at:			function(pos)
 					{
-						return (pos ? _cache.getNewLObject([this[pos]]) : this);
-					},
-		attr:		function(attrIn, val)
-					{
-						var i, len;
-						for(i = 0, len = this.length; i < len; i += 1)
-						{
-							if(val)
-							{
-								this[i].setAttribute(attrIn, val);
-							}else{
-								if(typeof attrIn == "object")
-								{
-									for(var key in attrIn)
-									{
-										if(typeof attrIn[key] !== "function")
-										{
-											this[i].setAttribute(key, attrIn[key]);
-										}
-									}
-								}else{
-									return this[i].getAttribute(attrIn);
-								}
-							}
-						}
-						return this;
+						return (pos ? new LObject([this[pos]]) : this);
 					},
 		click:		function(func)
 					{
@@ -230,22 +172,6 @@
 						}
 						return this;
 					},
-		data:		function(keyIn, val)
-					{
-						if(typeof keyIn == "string"){
-							if(val)
-							{
-								var i, len;
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this[i].setAttribute("data-" + keyIn, val);
-								}
-							}else{
-								return this[0].getAttribute("data-" + keyIn);
-							}
-						}
-						return this;
-					},
 		event:		function(eventIn, func)
 					{
 						var i, len;
@@ -253,7 +179,8 @@
 						{
 							for(i = 0, len = this.length; i < len; i += 1)
 							{
-								if(this[i].attachEvent){
+								if(this[i].attachEvent)
+								{
 									this[i].attachEvent("on" + eventIn, func);
 								}else if(this[i].addEventListener){
 									this[i].addEventListener(eventIn, func);
@@ -263,25 +190,34 @@
 						return this;
 					},
 		find:		function(subselector)
-					{						
-						var i, j, ret = [], topush;
+					{
+						var i, j, len, ret, topush;
 						if(subselector)
 						{
-							for(i = 0; i < this.length; i += 1)
-							{
-								topush = window.Grab(subselector, this[i], false);
-								for(j = 0; j < topush.length; j += 1)
+							ret = [];
+							if(isSizzle)
+							{	
+								for(i = 0, len = this.length; i < len; i += 1)
 								{
-									ret.push(topush[j]);
+									Sizzle(subselector, this[i], ret);
+								}
+							}else if(document.querySelectorAll){
+								for(i = 0, len = this.length; i < len; i += 1)
+								{
+									topush = this[i].querySelectorAll(subselector);
+									for(j = 0; j < topush.length; j += 1)
+									{
+										ret.push(topush[j]);
+									}
 								}
 							}
-							return ((ret.length === 0) ? this : _cache.getNewLObject(ret));
+							return ((ret.length === 0) ? this : new LObject(ret));
 						}
 						return this;
 					},
 		filter:		function(filter)
 					{
-						if(filter && (_cache.tags[filter]))
+						if(filter)
 						{
 							var ret = [], first = this[0], i, len;
 							for(i = 0, len = first.children.length; i < len; i += 1)
@@ -291,13 +227,13 @@
 									ret.push(first.children[i]);
 								}
 							}
-							return _cache.getNewLObject(ret);
+							return new LObject(ret);
 						}
 						return this;
 					},
 		first:		function()
 					{
-						return _cache.getNewLObject([this[0]]);
+						return new LObject([this[0]]);
 					},
 		get:		function(pos)
 					{
@@ -378,7 +314,7 @@
 							{
 								this[0].innerHTML = newHtml;
 							}else{
-								var temp = _cache.docCreateEl.call(doc, "div");
+								var temp = document.createElement("div");
 								temp.appendChild(newHtml);
 								this[0].innerHTML = temp.innerHTML;
 							}
@@ -389,7 +325,7 @@
 					},
 		last:		function()
 					{
-						return _cache.getNewLObject([this[this.length - 1]]);
+						return new LObject([this[this.length - 1]]);
 					},
 		loop: 		function(todo)
 					{
@@ -398,7 +334,7 @@
 						{
 							for(i = 0, len = this.length; i < len; i += 1)
 							{
-								todo(i, _cache.getNewLObject([this[i]]));
+								todo(i, new LObject([this[i]]));
 							}
 						}
 						return this;
@@ -552,31 +488,6 @@
 						}
 						return this;
 					},
-		val:		function(newVal){
-						var i, len;
-						if(newVal)
-						{
-							if(typeof newVal === "string")
-							{
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this[i].value = newVal;
-								}
-							}else if(lbjs.array.isArray(newVal)){
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this[i].value = newVal[i];
-								}
-							}else if(typeof newVal === "function"){
-								for(i = 0, len = this.length; i < len; i += 1)
-								{
-									this[i].value = newVal.apply(this[i], [i,this[i].value]);
-								}
-							}
-							return this;
-						}
-						return this[0].value;
-					},
 		width:		function(newWidth)
 					{
 						var i, len;
@@ -611,30 +522,21 @@
 	lbjs.array = {
 		inArray:	function(arrayIn, check)
 					{
-						if(arrayIn.includes)
+						var len = arrayIn.length, i;
+						for(i = 0; i < len; i += 1)
 						{
-							return arrayIn.includes(check);
-						}else{
-							var len = arrayIn.length, i;
-							for(i = 0; i < len; i += 1)
-							{
-								if(arrayIn[i] === check){return i;}
-							}
-							return -1;
+							if(arrayIn[i] === check){return i;}
 						}
+						return -1;
 					},
 		isArray:	function(varIn){return varIn.constructor === Array;},
-		copy:		function(outArray, inArray){
-						if(inArray.constructor === Array){
-							_cache.aPush.apply(outArray, inArray);
-						}else{
-							var len, i = 0;
-							for(len = inArray.length; i < len; i += 1)
-							{
-								outArray[i] = inArray[i];
-							}
-							outArray.length = inArray.length;
+		copy:		function(obj, result){
+						var len, i = 0;
+						for(len = result.length; i < len; i += 1)
+						{
+							obj[i] = result[i];
 						}
+						obj.length = result.length;
 					}
 	};
 
@@ -645,28 +547,22 @@
 	
 	lbjs.xtra = {
 		noop:		function(){return undefined;},
-		isUndefined:function(varin){return varin === undefined;},
-		getHead:	function(){return document.getElementsByTagName ? document.getElementsByTagName('head')[0] : document.head;}(),
-		repeat:		function(count, toDo)
-					{
-						while(count > 0)
-						{
-							toDo();
-							--count;
-						}
-					}
+		isFunction:	function(varin){return typeof varin === "function";},
+		isUndefined:function(varin){return varin === undefined;}
 	};
 	
 	lbjs.ext = {
+		list:		[],
 		include: 	function(name, ver, get)
 					{
-						var plugin = window.lbjs[name.split('.')[1]],
-							vercheck = function(){
-								plugin.pversion = plugin.pversion || 0;
-								if(plugin.pversion < ver){throw "Insufficient version of " + name;}
+						var vercheck = function(){
+								var plugin = window.lbjs[name.split('.')[1]];
+								if(plugin.pversion < ver){throw "";}
+								try{plugin.main();}catch(ignore){}
+								lbjs.ext.list[lbjs.ext.list.length] = name;
 								return true;
 							},
-							scr = _cache.docCreateEl.call(document, 'script');
+							scr = document.createElement('script');
 						if(get !== false)
 						{
 							if(!window.lbjs[name.split('.')[1]] || get === true)
@@ -677,7 +573,6 @@
 								if(ver)
 								{
 									scr.onreadystatechange = scr.onload = function(){
-										if(plugin.main){plugin.main();}
 										var state = scr.readyState;
 										if(!vercheck.done && (!state || (state === "loaded" || state === "complete")))
 										{
@@ -686,20 +581,15 @@
 										}
 										return null;
 									};
-								}else{
-									scr.onreadystatechange = scr.onload = function(){
-										if(plugin.main){plugin.main();}	
-									}
-									return null;
 								}
-								lbjs.xtra.getHead.appendChild(scr);
-							}else{
-								if(plugin.main){plugin.main();}
+								document.getElementsByTagName('head')[0].appendChild(scr);
 							}
 							return true;
 						}
-						if(plugin.main){plugin.main();}
-						if(ver){return vercheck();}
+						if(ver)
+						{
+							return vercheck();
+						}
 						return false;
 					},
 		includeList:function(deps, get)
@@ -708,6 +598,33 @@
 						for(i = 0, len = deps.length; i < len; i += 1)
 						{	
 							lbjs.ext.include(deps[i][0], deps[i][1], get);
+						}
+					},
+		require:	function(name, ver, get){lbjs.ext.include(name, ver, get);},
+		requireList:function(deps, get){lbjs.ext.includeList(deps, get);},
+		registered:	function(where)
+					{
+						var i, len, j, len2;
+						for(i = 0, len = lbjs.ext.list; i < len; i += 1)
+						{
+							var output = lbjs.ext.list[i] + " : " + window.lbjs[lbjs.ext.list[i].split('.')[1]].pversion;
+							if(where)
+							{
+								if(where.length)
+								{
+									for(j = 0, len2 = where.length; j < len2; j += 1)
+									{
+										where[j].innerHtml += output + "<br />";
+									}
+								}else{
+									where.innerHtml += output + "<br />";
+								}
+							}else{
+								if(console)
+								{
+									console.log(output);
+								}
+							}
 						}
 					},
 		extend: 	function(newFunctions)
