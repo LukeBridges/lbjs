@@ -1,8 +1,9 @@
 lbjs.ais = {
-	pversion: 	0.5,
+	pversion: 	0.7,
 	icons:		{home: false, hs: false, dr: false, track: false, k: false, b: false, a: false, g: false,
 				r: false, w: false, y: false, m: false, o: false, n: false},
 	iconLookup:	{},
+	pi180:		function(){return Math.PI / 180;}(),
 	status:		['Underway', 'At Anchor', 'Not Under Command', 'Restricted Maneuverability', 'Constrained by Draught',
 				'Moored', 'Aground', 'Engaged in Fishing', 'Underway by Sail', 'Reserved for HSC Category', 'Reserved for WIG Category',
 				false, false, false, false, 'Default (15)'],
@@ -63,11 +64,10 @@ lbjs.ais = {
 					return result;
 				},
 	rangeBearing: 	function(lat1, lon1, lat2, lon2){
-					var pi180 = Math.PI / 180,
-						la1 = lat1 * pi180,
-						lo1 = lon1 * pi180,
-						la2 = lat2 * pi180,
-						lo2 = lon2 * pi180,
+					var la1 = lat1 * lbjs.ais.pi180,
+						lo1 = lon1 * lbjs.ais.pi180,
+						la2 = lat2 * lbjs.ais.pi180,
+						lo2 = lon2 * lbjs.ais.pi180,
 						lo2lo1 = lo2 - lo1,
 						cosla1 = Math.cos(la1),
 						cosla2 = Math.cos(la2),
@@ -81,7 +81,3 @@ lbjs.ais = {
 					return {range: range, bearing: bearing};
 				}
 };
-lbjs.ais.iconLookup = {30: lbjs.ais.icons.y, 31: lbjs.ais.icons.o, 32: lbjs.ais.icons.o, 33: lbjs.ais.icons.dr, 34: lbjs.ais.icons.y, 35: lbjs.ais.icons.k,
-	36: lbjs.ais.icons.b, 37: lbjs.ais.icons.b, 38: lbjs.ais.icons.w, 39: lbjs.ais.icons.w, 50: lbjs.ais.icons.g, 51: lbjs.ais.icons.g,
-	52: lbjs.ais.icons.o, 53: lbjs.ais.icons.o, 54: lbjs.ais.icons.o, 55: lbjs.ais.icons.k, 56: lbjs.ais.icons.w, 57: lbjs.ais.icons.w,
-	58: lbjs.ais.icons.g, 59: lbjs.ais.icons.g, 132: lbjs.ais.icons.home, 133: lbjs.ais.icons.track};

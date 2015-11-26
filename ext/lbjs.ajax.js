@@ -20,7 +20,7 @@ lbjs.ajax = {
 							}
 						}
 					}
-					xmlhttp.open("GET",options.url,true);
+					xmlhttp.open("GET", options.url, true);
 					xmlhttp.send();
 				}
 };
