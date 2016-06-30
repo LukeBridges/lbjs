@@ -1,31 +1,28 @@
 (function(){
-	var iversion = "0.32a",
+	var iversion = "0.33a",
 		iname = "lbjs",
 		window = this,
 		_cache = {	docGetElId : 	document.getElementById,
-					docCreateEl : 	document.createElement,
 					aPush : 		Array.prototype.push,
-					getNewLObject : function(pass){return new LObject(pass);},
 					tags : 			{div:true, body:true, table:true, tr:true, td:true, html:true,
 									head:true, a:true, span:true, ul:true, li:true, ol:true, 
 									p:true, h1:true, h2:true, h3:true, h4:true, h5:true, form:true, 
 									input:true, select:true, textarea:true, b:true, i:true, u:true,
 									dl:true, dt:true, dd:true, blockquote:true, tt:true, em:true,
-									strong:true}};
+									strong:true, body: true}};
 	
-	window.Grab = function(selector, scope, copyTo){
-		var ret = [], temp, 
+	window.Grab = function(selector, scope = document, copyTo){
+		var ret = [], 
 			nospace = selector.indexOf(" ") < 0, 
 			nocss = selector.indexOf("[") < 0;
-		scope = scope || document;
 		if(nocss && nospace && scope.getElementById && (selector[0] === "#")){
-			ret.push(_cache.docGetElId.call(scope, selector.slice(1)));
+			ret.push(scope.getElementById(selector.slice(1)));
 		}else if(nocss && nospace && scope.getElementsByClassName && (selector[0] === ".")){
 			ret = scope.getElementsByClassName(selector.slice(1));
 		}else if(nocss && nospace && scope.getElementsByTagName && _cache.tags[selector]){
 			ret = scope.getElementsByTagName(selector);
-		}else if(nocss && _cache.docCreateEl && (selector[0] === "<")){
-			temp = _cache.docCreateEl.call(document, "div");
+		}else if(nocss && document.createElement && (selector[0] === "<")){
+			let temp = document.createElement("div");
 			temp.innerHTML = selector;
 			ret = temp.children;
 		}else if(scope.querySelectorAll){
@@ -41,7 +38,6 @@
 		{
 			if(typeof selector === "string")
 			{
-				scope = scope || document;
 				window.Grab(selector, scope, obj);
 			}else if(selector.length){
 				lbjs.array.copy(obj, selector);
@@ -51,10 +47,6 @@
 			}
 		}
 		return obj;
-	};
-	
-	window.L = function(selector, scope){
-		return ["Using L is now deprecated, please use lbjs() or l() instead"];
 	};
 	
 	window.LObject = function(domArray){
@@ -186,7 +178,7 @@
 					},
 		at:			function(pos)
 					{
-						return (pos ? _cache.getNewLObject([this[pos]]) : this);
+						return pos ? new LObject([this[pos]]) : this;
 					},
 		attr:		function(attrIn, val)
 					{
@@ -275,7 +267,7 @@
 									ret.push(topush[j]);
 								}
 							}
-							return ((ret.length === 0) ? this : _cache.getNewLObject(ret));
+							return ((ret.length === 0) ? this : new LObject(ret));
 						}
 						return this;
 					},
@@ -291,17 +283,17 @@
 									ret.push(first.children[i]);
 								}
 							}
-							return _cache.getNewLObject(ret);
+							return new LObject(ret);
 						}
 						return this;
 					},
 		first:		function()
 					{
-						return _cache.getNewLObject([this[0]]);
+						return new LObject([this[0]]);
 					},
 		get:		function(pos)
 					{
-						return (pos ? this[pos] : this);
+						return pos ? this[pos] : this;
 					},	
 		getAll:		function()
 					{
@@ -389,7 +381,7 @@
 					},
 		last:		function()
 					{
-						return _cache.getNewLObject([this[this.length - 1]]);
+						return new LObject([this[this.length - 1]]);
 					},
 		loop: 		function(todo)
 					{
@@ -398,7 +390,7 @@
 						{
 							for(i = 0, len = this.length; i < len; i += 1)
 							{
-								todo(i, _cache.getNewLObject([this[i]]));
+								todo(i, new LObject([this[i]]));
 							}
 						}
 						return this;
@@ -611,16 +603,20 @@
 	lbjs.array = {
 		inArray:	function(arrayIn, check)
 					{
+						var len = arrayIn.length, i;
+						for(i = 0; i < len; i += 1)
+						{
+							if(arrayIn[i] === check){return i;}
+						}
+						return -1;
+					},
+		inArray2:	function(arrayIn, check)
+					{
 						if(arrayIn.includes)
 						{
 							return arrayIn.includes(check);
 						}else{
-							var len = arrayIn.length, i;
-							for(i = 0; i < len; i += 1)
-							{
-								if(arrayIn[i] === check){return i;}
-							}
-							return -1;
+							lbja.array.inArray(arrayIn, check);
 						}
 					},
 		isArray:	function(varIn){return varIn.constructor === Array;},
@@ -629,6 +625,7 @@
 							_cache.aPush.apply(outArray, inArray);
 						}else{
 							var len, i = 0;
+							outArray.length = inArray.length;
 							for(len = inArray.length; i < len; i += 1)
 							{
 								outArray[i] = inArray[i];
@@ -645,7 +642,6 @@
 	
 	lbjs.xtra = {
 		noop:		function(){return undefined;},
-		isUndefined:function(varin){return varin === undefined;},
 		getHead:	function(){return document.getElementsByTagName ? document.getElementsByTagName('head')[0] : document.head;}(),
 		repeat:		function(count, toDo)
 					{
@@ -666,7 +662,7 @@
 								if(plugin.pversion < ver){throw "Insufficient version of " + name;}
 								return true;
 							},
-							scr = _cache.docCreateEl.call(document, 'script');
+							scr = document.createElement('script');
 						if(get !== false)
 						{
 							if(!window.lbjs[name.split('.')[1]] || get === true)

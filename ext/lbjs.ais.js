@@ -1,9 +1,14 @@
 lbjs.ais = {
-	pversion: 	0.7,
+	pversion: 	0.60,
+	main:		function(){
+					lbjs.ais.iconLookup = {30: lbjs.ais.icons.y, 31: lbjs.ais.icons.o, 32: lbjs.ais.icons.o, 33: lbjs.ais.icons.dr, 34: lbjs.ais.icons.y, 35: lbjs.ais.icons.k,
+						36: lbjs.ais.icons.b, 37: lbjs.ais.icons.b, 38: lbjs.ais.icons.w, 39: lbjs.ais.icons.w, 50: lbjs.ais.icons.g, 51: lbjs.ais.icons.g,
+						52: lbjs.ais.icons.o, 53: lbjs.ais.icons.o, 54: lbjs.ais.icons.o, 55: lbjs.ais.icons.k, 56: lbjs.ais.icons.w, 57: lbjs.ais.icons.w,
+						58: lbjs.ais.icons.g, 59: lbjs.ais.icons.g, 132: lbjs.ais.icons.home, 133: lbjs.ais.icons.track};
+				},
 	icons:		{home: false, hs: false, dr: false, track: false, k: false, b: false, a: false, g: false,
 				r: false, w: false, y: false, m: false, o: false, n: false},
 	iconLookup:	{},
-	pi180:		function(){return Math.PI / 180;}(),
 	status:		['Underway', 'At Anchor', 'Not Under Command', 'Restricted Maneuverability', 'Constrained by Draught',
 				'Moored', 'Aground', 'Engaged in Fishing', 'Underway by Sail', 'Reserved for HSC Category', 'Reserved for WIG Category',
 				false, false, false, false, 'Default (15)'],
@@ -23,7 +28,7 @@ lbjs.ais = {
 					'Manned VTS', 'Light Vessel / LANBY', 'Reference Point'],
 	getStatus: 	function(status)
 				{
-					var ret = lbjs.ais.status[parseInt(status, 10)];
+					let ret = lbjs.ais.status[parseInt(status,10)];
 					return ret ? ret : status;
 				},
 	getClass: 	function(aisclass)
@@ -41,9 +46,9 @@ lbjs.ais = {
 						default: return aisclass;
 					}
 				},
-	getColour: function(type)
+	getColour:	function(type)
 				{
-					var iconret = lbjs.ais.iconLookup[type],
+					let iconret = lbjs.ais.iconLookup[type],
 						ret = [false, false, false, false, lbjs.ais.icons.hs, false, lbjs.ais.icons.b, lbjs.ais.icons.r, lbjs.ais.icons.m];
 					if(iconret){return iconret;}
 					if(type > 99){return lbjs.ais.icons.a;}  // "gray"
@@ -51,7 +56,7 @@ lbjs.ais = {
 					return ret ? ret : lbjs.ais.icons.w;
 				},
 	getType: 	function(id){
-					var type = Math.floor(id / 10),
+					let type = Math.floor(id / 10),
 						rem = id % 10,
 						result = '';
 					if(type === 3){result = lbjs.ais.type3[rem];}
@@ -64,20 +69,21 @@ lbjs.ais = {
 					return result;
 				},
 	rangeBearing: 	function(lat1, lon1, lat2, lon2){
-					var la1 = lat1 * lbjs.ais.pi180,
-						lo1 = lon1 * lbjs.ais.pi180,
-						la2 = lat2 * lbjs.ais.pi180,
-						lo2 = lon2 * lbjs.ais.pi180,
+					const pi180 = Math.PI / 180,
+						la1 = lat1 * pi180,
+						lo1 = lon1 * pi180,
+						la2 = lat2 * pi180,
+						lo2 = lon2 * pi180,
 						lo2lo1 = lo2 - lo1,
 						cosla1 = Math.cos(la1),
 						cosla2 = Math.cos(la2),
 						sinla1 = Math.sin(la1),
 						sinla2 = Math.sin(la2),
-						x = (sinla2 * sinla1) + (cosla2 * cosla1 * Math.cos(lo2lo1)),
-						range = Math.round((((Math.PI / 2) - Math.atan(x / Math.sqrt(-x * x + 1))) * 10800 / Math.PI) * 10) / 10,
+						coslo2lo1 = Math.cos(lo2lo1),
+						x = (sinla1 * sinla2) + (cosla1 * cosla2 * coslo2lo1),
 						y = Math.sin(lo2lo1) * cosla2,
-						x2 = (cosla1 * sinla2) - (sinla1 * cosla2 * Math.cos(lo2lo1)),
-						bearing = Math.round(((Math.atan2(y, x2) * 180 / Math.PI) + 360) % 360);
-					return {range: range, bearing: bearing};
+						x2 = (cosla1 * sinla2) - (sinla1 * cosla2 * coslo2lo1);
+					return {range: Math.round((((Math.PI / 2) - Math.atan(x / Math.sqrt(-x * x + 1))) * 10800 / Math.PI) * 10) / 10, 
+							bearing: Math.round(((Math.atan2(y, x2) * 180 / Math.PI) + 360) % 360)};
 				}
 };

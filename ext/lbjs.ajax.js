@@ -1,5 +1,5 @@
 lbjs.ajax = {
-	pversion: 	0.3,
+	pversion: 	0.4,
 	get: 		function(options)
 				{
 					'use strict';
@@ -7,7 +7,7 @@ lbjs.ajax = {
 					{
 						options = {url: options}
 					}
-					var xmlhttp = new XMLHttpRequest();
+					let xmlhttp = new XMLHttpRequest();
 					xmlhttp.onreadystatechange = function()
 					{
 						if(xmlhttp.readyState === 4 && xmlhttp.status === 200)
@@ -20,7 +20,7 @@ lbjs.ajax = {
 							}
 						}
 					}
-					xmlhttp.open("GET", options.url, true);
+					xmlhttp.open("GET",options.url,true);
 					xmlhttp.send();
 				}
 };
