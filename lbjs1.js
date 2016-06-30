@@ -62,9 +62,9 @@
 		}
 		addClass(toAdd)
 		{
-			toAdd = encodeURI(toAdd);
 			if(toAdd)
 			{
+				toAdd = encodeURI(toAdd);
 				for(let i = 0, len = this.length; i < len; i += 1)
 				{
 					if(typeof toAdd === "function")
@@ -579,12 +579,14 @@
 	window.LObject = LObject;
 	
 	lbjs.about = {
+		pversion:	0.1,
 		tag:		function(){return iname + "/" + iversion;},
 		name: 		function(){return iname;},
 		version: 	function(){return iversion;}
 	};
 	
 	lbjs.array = {
+		pversion:	0.2,
 		inArray:	function(arrayIn, check)
 					{
 						for(let i = 0, len = arrayIn.length; i < len; i += 1)
@@ -595,9 +597,7 @@
 					},
 		isArray:	function(varIn){return varIn.constructor === Array;},
 		copy:		function(outArray, inArray){
-						if(inArray.from){
-							outArray = Array.from(inArray);
-						}else if(inArray.constructor === Array){
+						if(inArray.constructor === Array){
 							Array.prototype.push.apply(outArray, inArray);
 						}else{
 							outArray.length = inArray.length;
@@ -610,12 +610,8 @@
 					}
 	};
 
-	lbjs.text = {
-		getRanChar:	function(possible){return possible.charAt(Math.floor(Math.random() * possible.length));},
-		splitLines:	function(line){return line.split("\n");}
-	};
-	
 	lbjs.xtra = {
+		pversion:	0.1,
 		noop:		function(){return undefined;},
 		repeat:		function(count, toDo)
 					{
@@ -624,64 +620,14 @@
 							while(count > 0)
 							{
 								toDo();
-								--count;
+								count -= 1;
 							}
 						}
 					}
 	};
 	
 	lbjs.ext = {
-		include: 	function(name, ver, get)
-					{
-						let plugin = window.lbjs[name.split('.')[1]],
-							vercheck = function(){
-								plugin.pversion = plugin.pversion || 0;
-								if(plugin.pversion < ver){throw "Insufficient version of " + name;}
-								return true;
-							},
-							scr = document.createElement('script');
-						if(get !== false)
-						{
-							if(!window.lbjs[name.split('.')[1]] || get === true)
-							{
-								scr.type = 'text/javascript';
-								scr.src = 'http://static.lukebridges.co.uk/lbjs/ext/' + name + '.js';
-								scr.async = false;
-								if(ver)
-								{
-									scr.onreadystatechange = scr.onload = function(){
-										if(plugin.main){plugin.main();}
-										let state = scr.readyState;
-										if(!vercheck.done && (!state || (state === "loaded" || state === "complete")))
-										{
-											vercheck.done = true;
-											return vercheck();
-										}
-										return null;
-									};
-								}else{
-									scr.onreadystatechange = scr.onload = function(){
-										if(plugin.main){plugin.main();}	
-									}
-									return null;
-								}
-								document.getElementsByTagName('head')[0].appendChild(scr);
-							}else{
-								if(plugin.main){plugin.main();}
-							}
-							return true;
-						}
-						if(plugin.main){plugin.main();}
-						if(ver){return vercheck();}
-						return false;
-					},
-		includeList:function(deps, get)
-					{	
-						for(let i = 0, len = deps.length; i < len; i += 1)
-						{	
-							lbjs.ext.include(deps[i][0], deps[i][1], get);
-						}
-					},
+		pversion:	0.2,
 		extend: 	function(newFunctions)
 					{
 						for(let propt in newFunctions){
